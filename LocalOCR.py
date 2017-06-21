@@ -15,7 +15,7 @@ import os
 import re
 
 
-class pdf_to_txt(object):
+class LocalOCR(object):
 	
     def __init__(self, ocr_language):
         tools = pyocr.get_available_tools()

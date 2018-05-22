@@ -9,7 +9,10 @@ import time
 import os
 import shutil
 import subprocess
-from google.cloud import vision
+from google.cloud import vision_v1
+from google.cloud.vision_v1 import types
+from google.cloud.storage import client
+import os
 
 class CloudOCR(object):
 	def __init__(self, ocr_language, pdf_input, img_dir, imageformat, img_prefix):
@@ -59,33 +62,60 @@ class CloudOCR(object):
 
 	def visionapi(self):
 		print('3. visionapi')
-		vision_client = vision.Client()
+		vision_client = vision_v1.ImageAnnotatorClient()
 
 		files = os.listdir(self.img_dir)
 		txt = ""
-		for file in files:
-			txt += self.worker_visionapi(vision_client, (self.img_dir+file))
+		for item in files:
+			txt += self.worker_visionapi(vision_client, (self.img_dir+item))
 		return txt
 
 	def worker_visionapi(self, vision_client, filename_input):
 		print('processing "%s"' % filename_input)
+		
 		file_name = os.path.join(
 			os.path.dirname(__file__), filename_input)
 
-		with io.open(file_name, 'rb') as image_file:
-			content = image_file.read()
-			image = vision_client.image(
-				content=content)
-		#languageHints = "it"
-		texts = image.detect_text()
-		txt = ""
-		for text in texts:
-			txt += text.description
-			# vertices = (['({},{})'.format(bound.x_coordinate, bound.y_coordinate)
-			#             for bound in text.bounds.vertices])
-			# print('DGB bounds: {}'.format(','.join(vertices)))
-		# self.save_output(filename_input + ".txt", txt)
+		#with io.open(file_name, 'rb') as image_file:
+		#	content = image_file.read()
+		#	image = vision_client.image(
+		#		content=content)
+		##languageHints = "it"
+		#texts = image.detect_text()
+		request = {
+		'image': {
+				'source': {'image_uri': 'https://jeroen.github.io/images/testocr.png'},
+			},
+		}
+		response = vision_client.annotate_image(request)
+		
+		# print('reply "%s"' % response)
+		
+		txt = response.text_annotations
+		print('reply "%s"' % txt)
+		
+		#txt = ""
+		#for text in texts:
+		#	txt += text.description
+		#	# vertices = (['({},{})'.format(bound.x_coordinate, bound.y_coordinate)
+		#	#             for bound in text.bounds.vertices])
+		#	# print('DGB bounds: {}'.format(','.join(vertices)))
+		## self.save_output(filename_input + ".txt", txt)
+		
 		return txt
+		
+	def upload_file(self):
+		bucket = null;
+		try:
+			bucket = client.get_bucket('my-bucket')
+		except google.cloud.exceptions.NotFound:
+			bucket = client.create_bucket('my-bucket')
+
+		files = os.listdir(self.img_dir)
+		for item in files:
+			file_name = os.path.join(
+				os.path.dirname(__file__), filename_input)
+			client.upload_from_filename(file_name)
 
 	def save_output(self, f_output, text):
 		file = open(f_output, "w")
@@ -94,6 +124,8 @@ class CloudOCR(object):
 		file.close()
 
 if __name__ == '__main__':
+	os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
+	
 	parser = argparse.ArgumentParser(description='Process input PDF file to CSV by OCR')
 	parser.add_argument('pdf_filename', nargs='?', default='INPUT.pdf',
 						help='Input PDF file')

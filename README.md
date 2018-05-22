@@ -19,7 +19,7 @@ Python code to do OCR recognition of a PDF file and export text to TXT file.
 Install [Google Cloud SDK](https://cloud.google.com/sdk/docs/#deb)
 
 
-    apt-get install google-cloud-sdk-app-engine-python
+    apt-get install pdfimages google-cloud-sdk-app-engine-python
     pip install requirements.txt
 
 
